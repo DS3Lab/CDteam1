@@ -1,9 +1,9 @@
-var MongoClient = require('mongodb').MongoClient;
-var url = "mongodb://CDteam1:" + encodeURIComponent('') + "@spaceml4.ethz.ch:27017/CDteam1DB"
+let MongoClient = require('mongodb').MongoClient;
+let config = require("./config.js");
 
 function connect(onDisconnect) {
 	return new Promise((resolve, reject) => {	
-		return MongoClient.connect(url)
+		return MongoClient.connect(config.mongodb_url)
 		.then((client) => {
 			db = client.db("CDteam1DB");
 			resolve(db);

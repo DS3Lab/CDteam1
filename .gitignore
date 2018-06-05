@@ -1,3 +1,5 @@
+# NodeJS config files
+webapp/config.js
 # Node modules
 webapp/node_modules
 # Compiled source #

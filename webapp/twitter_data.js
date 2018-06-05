@@ -1,5 +1,5 @@
 let mongodb = require("./mongodb.js");
-let timedelta = 5; // seconds
+let timedelta = 1; // seconds
 
 module.exports = ((io) => {
 	function broadcastTwitterStats() {
