@@ -1,0 +1,16 @@
+<%- include("header") %>
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+<div id="container">
+</div>
+<script>
+	window.onload = () => {
+		let handle = canvasRealtime("container", "Latest tweets", 20);
+		let socket = io();
+		socket.on("twitter_count", (count) => {
+			console.log("twitter count!");
+			canvasRealtimeUpdate(handle, { x: new Date(new Date().getTime()), y: count });
+		});
+	};
+</script>
+<%- include("footer") %>
