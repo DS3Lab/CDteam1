@@ -5,7 +5,38 @@ Repository for Team 1 on [Cryptodatathon](https://www.cryptodatathon.com/).
 
 ## Environment
 
-## AWS EC
+## Google Cloud Platform
+
+We have one instance of Google Cloud Platform machine that hosts a web server. Installation and setup instructions are the following.
+
+* Generate public/private key pair:
+	```
+	ssh-keygen -t rsa -f ~/.ssh/cdteam1 -C cdteam1
+	```
+
+* Change permissions:
+	```
+	chmod 400 cdteam1
+	```
+
+* Send the public key "cdteam1.pub" to server administrator. You can now establish a ssh connection to server through the public key authentification:
+	```
+	ssh -i cdteam1 cdteam1@[ip address of the machine]
+	```
+
+## Amazon Web Services
+
+We have one instance of AWS EC2 machine of type m5.4xlarge with 64 GB of RAM memory and 2TB of HDD mounted to `/data`. Spark and MongoDB are already installed on the instance. The instance will be deleted after the datathon, so should not be used for permanent data storage, only processing!
+
+* In order to connect to it follow the same procedure as for GCP platform. Then you can establish the ssh connection to the EC2 machine:
+	```
+	ssh -i CDteam1.pem ubuntu@[hostname identifier of your machine].compute-1.amazonaws.com
+	```
+
+* Once you connect to EC2 you can connect to MongoDB database on the spaceml4 machine (exit with `quit()`).
+	```
+	mongo  spaceml4.ethz.ch/CDteam1DB -u "CDteam1" -p "[password]" --authenticationDatabase "CDteam1DB"
+	```
 
 ### Jupyter Notebook on AWS EC2
 
