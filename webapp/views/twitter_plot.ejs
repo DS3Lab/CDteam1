@@ -5,11 +5,29 @@
 </div>
 <script>
 	window.onload = () => {
-		let handle = canvasRealtime("container", "Latest tweets", 20);
+		let handle = canvasRealtime("container",
+			"Latest tweets",
+			100, [
+				"3-second update",
+				"Dummy 3-second update"
+			]);
 		let socket = io();
-		socket.on("twitter_count", (count) => {
-			console.log("twitter count!");
-			canvasRealtimeUpdate(handle, { x: new Date(new Date().getTime()), y: count });
+		socket.on("twitter_counts", (counts) => {
+			//console.log("got counts: " + JSON.stringify(counts, null, 2));
+			if(counts.length > 5) {
+				canvasRealtimeReset(handle, 0);
+			}
+			canvasRealtimeUpdate(handle,
+				0,
+				counts.map((count) => ({ x: new Date(count.date), y: count.count })));
+		});
+		socket.on("dummy_twitter_counts", (counts) => {
+			if(counts.length > 5) {
+				canvasRealtimeReset(handle, 1);
+			}
+			canvasRealtimeUpdate(handle,
+				1,
+				counts.map((count) => ({ x: new Date(count.date), y: count.count })));
 		});
 	};
 </script>
