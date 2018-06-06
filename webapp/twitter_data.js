@@ -1,5 +1,5 @@
 let DB_CONNECTION_RETRY_DELAY = 3000;
-let DEBUG_TIME_LAG = 22 * 3600 * 1000;
+let DEBUG_TIME_LAG = 24 * 3600 * 1000;
 let TIME_DELTA = 3 * 1000; // milliseconds
 let INITIAL_PERIODS = 50;
 
@@ -18,13 +18,16 @@ function clearData(key) {
 function saveData(key, records) {
 	//console.log("records: " + JSON.stringify(records, null, 2));
 	if(Object.keys(savedData).indexOf(key) == -1) {
-		savedData[key] = new SortedArray((a, b) => (a.date > b.date) ? 1 : -1);
+		savedData[key] = new SortedArray([], (a, b) => (a.date > b.date) ? 1 : -1);
 	}
 	let sa = savedData[key];
-	records.forEach((record) => sa.insert(record));
+	records.forEach((record) => {
+		sa.insert(record);
+	});
 	while(sa.array.length > INITIAL_PERIODS) {
 		sa.array.shift();
 	}
+	console.log("final sa: " + JSON.stringify(sa.array, null, 2));
 }
 
 function queryTweetsInIntervals(ivs) {
@@ -84,6 +87,7 @@ function initializeTwitterStats() {
 	for(let i = INITIAL_PERIODS; i > 0; i--) {
 		ivs.push([ now - i * TIME_DELTA, now - (i - 1) * TIME_DELTA ]);
 	}
+	console.log("start hist: " + new Date(ivs[0][1]) + "; end hist: " + new Date(ivs.slice(-1)[0][1]));
 	return queryTweetsInIntervals(ivs)
 	.then((results) => {
 		saveData("twitter_counts", results[0]);

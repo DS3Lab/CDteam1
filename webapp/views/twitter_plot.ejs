@@ -13,7 +13,7 @@
 			]);
 		let socket = io();
 		socket.on("twitter_counts", (counts) => {
-			//console.log("got counts: " + JSON.stringify(counts, null, 2));
+			console.log("got counts: " + JSON.stringify(counts, null, 2));
 			if(counts.length > 5) {
 				canvasRealtimeReset(handle, 0);
 			}
@@ -22,6 +22,7 @@
 				counts.map((count) => ({ x: new Date(count.date), y: count.count })));
 		});
 		socket.on("dummy_twitter_counts", (counts) => {
+			console.log("got dummy counts: " + JSON.stringify(counts, null, 2));
 			if(counts.length > 5) {
 				canvasRealtimeReset(handle, 1);
 			}

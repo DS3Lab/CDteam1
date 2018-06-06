@@ -71,6 +71,7 @@ function canvasRealtime(id, title, maxDataLength, names) {
             type: "line",
             showInLegend: true,
             dataPoints: new Array(),
+            xValueFormatString: "YYYY-MM-DD HH:mm:ss",
         });
     }
     var chart = new CanvasJS.Chart(id, {
