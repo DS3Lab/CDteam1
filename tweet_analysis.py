@@ -14,6 +14,12 @@ def sentiment(tweet):
     elif score == 1: return "neg"
     elif score == 2: return "neu"
 
+def sentiment_comp(tweet):
+    #sentiment_comp is more fine grained, and will detect partially positive and negative tweets as well.
+    if sia.polarity_scores(tweet)["compound"]>0.2: return "pos"
+    elif sia.polarity_scores(tweet)["compound"]<-0.2: return "neg"
+    else : return "neu"
+
 def mentioned(tweet):
     for word in tweet.split(" "):
         if word[0]=="@": return word
