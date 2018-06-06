@@ -62,32 +62,43 @@ function setupRealtime() {
 function updateRealtime() {
 }
 
-function canvasRealtime(id, title, maxDataLength) {
-    var dps = [];
+function canvasRealtime(id, title, maxDataLength, names) {
+    let series = [];
     maxDataLength = maxDataLength || 10;
+    for(let name of names) {
+        series.push({
+            name: name,
+            type: "line",
+            showInLegend: true,
+            dataPoints: new Array(),
+        });
+    }
     var chart = new CanvasJS.Chart(id, {
-        title :{
+        title: {
             text: title,
         },
         axisY: {
             includeZero: false
         },      
-        data: [{
-            type: "line",
-            dataPoints: dps
-        }]
+        data: series,
     });
     return {
         chart: chart,
-        dps: dps,
+        series: series,
         maxDataLength: maxDataLength,
     };
 }
 
-function canvasRealtimeUpdate(handle, dp) {
-    handle.dps.push(dp);
-    if(handle.dps.length > handle.maxDataLength) {
-        handle.dps.shift();
+function canvasRealtimeUpdate(handle, series, dps) {
+    let graphDps = handle.series[series].dataPoints;
+    graphDps.push.apply(graphDps, dps);
+    if(graphDps.length > handle.maxDataLength) {
+        graphDps.splice(0, graphDps.length - handle.maxDataLength);
     }
     handle.chart.render();
+}
+
+function canvasRealtimeReset(handle, series) {
+    let graphDps = handle.series[series].dataPoints;
+    graphDps.length = 0;
 }
