@@ -24,4 +24,4 @@ app.get("/twitter", (req, res) => {
 	return res.render("twitter_plot");
 });
 
-http.listen(3000);
+http.listen(3000, "0.0.0.0");
