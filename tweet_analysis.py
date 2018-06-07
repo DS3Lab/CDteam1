@@ -43,6 +43,7 @@ def detect_keyws(tweet):
     detected = []
     for word in (w for w in tweet.split(" ") if len(w)!=0):
         process_stem = False
+        word = word.strip(",.?!").strip()
         if word[-1] == "s":
             word_stem = word[:-1]
             process_stem = True
