@@ -41,6 +41,7 @@ def detect_keyws(tweet):
     detected = []  
     for word in tweet.split(" "):
         plural = 0
+        word = word.strip(",.?!").strip()
         if word[-1] == "s": 
             word_sing = word[:-1]
             plural = 1
