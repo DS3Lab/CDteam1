@@ -11,6 +11,11 @@ Please refer to the official documentation: https://nodejs.org/en/download/packa
 To install the required Node modules, run `npm install` in the `webapp` directory.
 
 ### Running the app
+To feed the realtime stats into the database:
+```
+node stats_producer.js
+```
+To start the webserver:
 ```
 node app.js
 ```
