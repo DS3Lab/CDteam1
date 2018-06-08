@@ -11,7 +11,7 @@
 				"3-second update",
 				"Dummy 3-second update"
 			]);
-		let socket = io();
+		let socket = io("/twitter_data");
 		socket.on("twitter_counts", (counts) => {
 			console.log("got counts: " + JSON.stringify(counts, null, 2));
 			if(counts.length > 5) {

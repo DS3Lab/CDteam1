@@ -1,0 +1,124 @@
+<%- include("header") %>
+<script src="/socket.io/socket.io.js"></script>
+<div ng-app="app" ng-controller="ctrl">
+	<h2>Some text</h2>
+	<p>{{ someText }}</p>
+	<h2>Available keywords</h2>
+	<ul>
+		<li ng-repeat="keyword in availableKeywords">{{ keyword }}</li>
+	</ul>
+	<h2>Checked keywords</h2>
+	<ul>
+		<li ng-repeat="keyword in availableKeywords" ng-show="enabledKeywords[keyword]">{{ keyword }}</li>
+	</ul>
+	<h2>Keywords checking</h2>
+	<form>
+		<span ng-repeat="keyword in availableKeywords">
+			<label for="{{keyword}}">
+				<input type="checkbox" ng-model="enabledKeywords[keyword]" name="group" id="{{ keyword }}" />
+				{{ keyword }}
+			</label>
+		</span>
+	</form>
+	<h2>Plotted series</h2>
+	<div id="container">
+	</div>
+</div>
+<script>
+	class LineChart {
+		constructor(id, title) {
+			this.id = id;
+			this.title = title;
+		}
+
+		setDataSeries(seriesNames) {
+			let data = new Array();
+			for(let seriesName in seriesNames) {
+				if(!seriesNames[seriesName]) {
+					continue;
+				}
+				//console.log("adding " + seriesName + " to plot");
+				data.push({
+					name: seriesName,
+		            type: "line",
+		            showInLegend: true,
+		            dataPoints: new Array(),
+		            xValueFormatString: "YYYY-MM-DD HH:mm:ss",
+				});
+			}
+			this.chart = new CanvasJS.Chart(this.id, {
+		        title: {
+		            text: this.title,
+		        },
+		        axisY: {
+		            includeZero: false
+		        },      
+		        data: data,
+		    });
+			this.chart.render();
+		}
+
+		addDataPoints(seriesName, points) {
+			let dps = null;
+			console.log("addDataPoints to " + seriesName + ": " + JSON.stringify(points, null, 2));
+			for(let series of this.chart.data) {
+				if(series.name == seriesName) {
+					dps = series.dataPoints;
+					break;
+				}
+			}
+			if(!dps) {
+				return;
+			}
+			dps.push.apply(dps, points);
+			this.chart.render();
+		}
+	}
+
+	var app = angular.module("app", []);
+	app.controller("ctrl", function($scope) {
+		// Chart
+		let chart = new LineChart("container", "Keyword occurences");
+
+		// Socket.IO
+		let socket = io("/twitter_data");
+		socket.on("available_keywords", (keywords) => {
+			$scope.availableKeywords = keywords;
+			$scope.$apply();
+		});
+		/*socket.on("twitter_keyword_bitcoin", (results) => {
+			console.log("received something: " + JSON.stringify(results, null, 2));
+		});*/
+
+		// Angular controller
+		$scope.someText = "Lorem ipsum";
+		$scope.availableKeywords = [ "word1" ];
+		$scope.enabledKeywords = {};
+		$scope.$watch("enabledKeywords", (newValue, oldValue) => {
+			// Update keyword request
+			let seriesNames = {};
+			for(let keyword in newValue) {
+				seriesNames["twitter_keyword_" + keyword] = newValue[keyword];
+			}
+			socket.emit("request_series", seriesNames);
+			// Update chart
+			chart.setDataSeries(seriesNames);
+			for(let seriesName in seriesNames) {
+				if(!seriesNames[seriesName]) {
+					continue;
+				}
+				socket.off(seriesName);
+				((seriesName) => {
+				socket.on(seriesName, (data) => {
+					//console.log("got data for series " + seriesName + ": " + JSON.stringify(data, null, 2));
+					chart.addDataPoints(seriesName, data.map((obj) => ({
+						x: new Date(obj.date),
+						y: obj.count,
+					})));
+				});
+				})(seriesName);
+			}
+		}, true);
+	});
+</script>
+<%- include("footer") %>

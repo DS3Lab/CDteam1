@@ -1,123 +1,116 @@
-let DB_CONNECTION_RETRY_DELAY = 3000;
-let DEBUG_TIME_LAG = 24 * 3600 * 1000;
-let TIME_DELTA = 3 * 1000; // milliseconds
-let INITIAL_PERIODS = 50;
-
 const PriorityQueue = require("priorityqueuejs");
 const SortedArray = require("sorted-array");
 const mongodb = require("./mongodb.js");
+const config = require("./config");
 
-let initialized = false;
+let seriesSets = [
+	require("./series_raw_tweet_count"),
+	require("./series_twitter_keywords"),
+];
 
-let savedData = {};
+let DB_CONNECTION_RETRY_DELAY = 3000;
 
-function clearData(key) {
-	savedData[keys].array.length = 0;
+let timeSeries = {};
+for(let seriesSet of seriesSets) {
+	timeSeries = { ...timeSeries, ...seriesSet.series }
 }
 
-function saveData(key, records) {
-	//console.log("records: " + JSON.stringify(records, null, 2));
-	if(Object.keys(savedData).indexOf(key) == -1) {
-		savedData[key] = new SortedArray([], (a, b) => (a.date > b.date) ? 1 : -1);
+function clearData(seriesName) {
+	let series = timeSeries[seriesName];
+	series.saved.array.length = 0;
+}
+
+function saveData(seriesName, records) {
+	//console.error("records: " + JSON.stringify(records, null, 2));
+	let series = timeSeries[seriesName];
+	if(!series.saved) {
+		series.saved = new SortedArray([], (a, b) => (a.date > b.date) ? 1 : -1);
 	}
-	let sa = savedData[key];
+	let sa = series.saved;
 	records.forEach((record) => {
 		sa.insert(record);
 	});
-	while(sa.array.length > INITIAL_PERIODS) {
+	while(sa.array.length > series.persistence) {
 		sa.array.shift();
 	}
-	console.log("final sa: " + JSON.stringify(sa.array, null, 2));
+	//console.error("final sa: " + JSON.stringify(sa.array, null, 2));
 }
 
-function queryTweetsInIntervals(ivs) {
-	if(!mongodb.db) {
-		return Promise.reject();
+function emitAllUnicast(socket, seriesName) {
+	console.error("emit all unicast " + seriesName);
+	let series = timeSeries[seriesName];
+	if(!series || !series.saved) {
+		return;
 	}
-	return (() => {
-	let p = Promise.resolve();
-	let counts = [];
-	for(let iv of ivs) {
-	((iv) => {
-		p = p.then(() => mongodb.db.collection("cleaned_tweets")
-		.count({
-			"timestamp_ms": {
-				"$gte": iv[0],
-				"$lt": iv[1],
-			}
-		})
-		.then((count) => {
-			counts.push({
-				"date": iv[1],
-				"count": count,
-			});
-			//console.log("count: " + count);
-		}))
-		.catch((err) => {});
-	})(iv);
+	//console.error("actually emitted: " + JSON.stringify(series.saved.array));
+	socket.emit(seriesName, series.saved.array);
+}
+
+function emitLastBroadcast(io, seriesName) {
+	let series = timeSeries[seriesName];
+	if(series.saved) {
+		console.error("will broadcast " + JSON.stringify(series.saved.array.slice(-1)));
+		io.in(seriesName).emit(seriesName, series.saved.array.slice(-1));
 	}
-	return p.then(() => {
-		//console.log("counts: " + JSON.stringify(counts, null, 2));
-		let dummy_counts = counts.map((c) => ({
-			date: c.date,
-			count: c.count * Math.random()
+}
+
+function initializeData() {
+	let now = config.fakeNow();
+	let proms = [];
+	for(let seriesName in timeSeries) {
+		let series = timeSeries[seriesName];
+		let ivs = [];
+		for(let i = series.persistence; i > 0; i--) {
+			ivs.push([ now - i * series.frequency, now - (i - 1) * series.frequency ]);
+		}
+		proms.push(series.queryInIntervals(ivs)
+		.then((results) => {
+			saveData(seriesName, results);
 		}));
-		return [ counts, dummy_counts ];
-	})
-	.catch((err) => {});
-	})();
-}
-
-function emitAll(emitter) {
-	for(let key in savedData) {
-		emitter.emit(key, savedData[key].array);
 	}
-}
-
-function emitLast(emitter) {
-	for(let key in savedData) {
-		emitter.emit(key, savedData[key].array.slice(-1));
-	}
-}
-
-function initializeTwitterStats() {
-	let now = Date.now() - DEBUG_TIME_LAG;
-	let ivs = [];
-	//console.log("trying initialization");
-	for(let i = INITIAL_PERIODS; i > 0; i--) {
-		ivs.push([ now - i * TIME_DELTA, now - (i - 1) * TIME_DELTA ]);
-	}
-	console.log("start hist: " + new Date(ivs[0][1]) + "; end hist: " + new Date(ivs.slice(-1)[0][1]));
-	return queryTweetsInIntervals(ivs)
-	.then((results) => {
-		saveData("twitter_counts", results[0]);
-		saveData("dummy_twitter_counts", results[1]);
-	})
+	return Promise.all(proms)
 	.catch(() => {
 		return new Promise((resolve, reject) => setTimeout(() => resolve(), DB_CONNECTION_RETRY_DELAY))
-		.then(initializeTwitterStats);
+		.then(initializeData);
 	});
+}
+
+function queryAndEmitData(io, seriesName) {
+	let series = timeSeries[seriesName];
+	let now = config.fakeNow();
+	return series.queryInIntervals([ [ now - series.frequency, now ] ])
+	.then((results) => {
+		saveData(seriesName, results)
+	})
+	.then(() => emitLastBroadcast(io, seriesName))
+	.catch((e) => { console.error("problem: " + e); })
+	.then(() => setTimeout(queryAndEmitData.bind(this, io, seriesName), series.frequency));
 }
 
 module.exports = ((io) => {
-	function broadcastTwitterStats() {
-		let now = Date.now() - DEBUG_TIME_LAG;
-		//console.log("broadcasting stats");
-		return queryTweetsInIntervals([ [ now - TIME_DELTA, now ] ])
-		.then((results) => {
-			saveData("twitter_counts", results[0]);
-			saveData("dummy_twitter_counts", results[1]);
-		})
-		.then(() => emitLast(io))
-		.catch((e) => { console.log("problem: " + e); })
-		.then(() => setTimeout(broadcastTwitterStats, TIME_DELTA));
-	}
-
 	io.on("connection", (socket) => {
-		//console.log("new connection");
-		emitAll(socket);
+		console.error("general twitter: new connection");
+		for(let seriesSet of seriesSets) {
+			seriesSet.newClient(socket);
+		}
+		for(let seriesName in timeSeries) {
+			emitAllUnicast(socket, seriesName);
+		}
+		socket.on("request_series", (seriesNames) => {
+			for(let seriesName in seriesNames) {
+				if(seriesNames[seriesName]) {
+					emitAllUnicast(socket, seriesName);
+					socket.join(seriesName);
+				}
+				else {
+					socket.leave(seriesName);
+				}
+			}
+		})
 	});
 
-	initializeTwitterStats();
-	broadcastTwitterStats();
+	initializeData();
+	for(let seriesName in timeSeries) {
+		queryAndEmitData(io, seriesName);
+	}
 });
