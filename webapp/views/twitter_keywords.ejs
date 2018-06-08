@@ -1,34 +1,34 @@
 <%- include("header") %>
 <script src="/socket.io/socket.io.js"></script>
 <div ng-app="app" ng-controller="ctrl">
-	<h2>Some text</h2>
-	<p>{{ someText }}</p>
-	<h2>Available keywords</h2>
-	<ul>
-		<li ng-repeat="keyword in availableKeywords">{{ keyword }}</li>
-	</ul>
-	<h2>Checked keywords</h2>
-	<ul>
-		<li ng-repeat="keyword in availableKeywords" ng-show="enabledKeywords[keyword]">{{ keyword }}</li>
-	</ul>
-	<h2>Keywords checking</h2>
-	<form>
-		<span ng-repeat="keyword in availableKeywords">
-			<label for="{{keyword}}">
-				<input type="checkbox" ng-model="enabledKeywords[keyword]" name="group" id="{{keyword}}" />
-				{{ keyword }}
-			</label>
-		</span>
-	</form>
-	<h2>Realtime plots</h2>
-	<div id="containers">
+	<div class="container mt-5">
+  		<div class="row text-left">
+  			<div class="col-sm">
+				<h3>Monitoring cryptocurrencies Twittersphere</h3>
+				<p>This is a Twitter streaming dashboard for monitoring sentiment and keywords on newly published Tweets. For more information check our <a href="https://github.com/DS3Lab/CDteam1" >Github page</a> and an official page of <a href="https://www.cryptodatathon.com/">Cryptodatathon 2018</a>.</p>
+				<p>To start, select the crpytocurrencies for which you want to retrieve the data:</p>
+				<form>
+					<span ng-repeat="keyword in availableKeywords">
+						<label for="{{keyword}}">
+							<input type="checkbox" ng-model="enabledKeywords[keyword]" name="group" id="{{ keyword }}" />
+							{{ keyword }}
+						</label>
+					</span>
+				</form>
+			</div>
+		</div>
+
+		<div id="containers">
+		</div>
+
 	</div>
 </div>
 <script>
 	class LineChart {
-		constructor(id, title) {
+		constructor(id, title, yLabel) {
 			this.id = id;
 			this.title = title;
+			this.yLabel = yLabel;
 		}
 
 		setDataSeries(seriesNames) {
@@ -49,9 +49,15 @@
 			this.chart = new CanvasJS.Chart(this.id, {
 		        title: {
 		            text: this.title,
+		            fontWeight: "lighter",
+		            fontSize: 20,
+		            fontStyle: "normal",
+		            fontFamily: "Tahoma"
 		        },
 		        axisY: {
-		            includeZero: false
+		        	title: this.yLabel,
+		            includeZero: false,
+		            gridDashType: "dot"
 		        },      
 		        data: data,
 		    });
@@ -81,8 +87,16 @@
 		let frequencies = <%- JSON.stringify(frequencies) %>;
 		let containers = document.querySelector("#containers");
 		for(let frequency in frequencies) {
-			containers.innerHTML += '<div id="container_count_' + frequency + '" style="width: 80%; height: 400px"></div><br />';
-			containers.innerHTML += '<div id="container_sentiment_' + frequency + '" style="width: 80%; height: 400px"></div><br />';
+			containers.innerHTML += '<div class="row text-left">\
+				<div class="col-sm">\
+					<div id="container_count_' + frequency + '" class="chartContainer"></div>\
+				</div>\
+			</div>';
+			containers.innerHTML += '<div class="row text-left">\
+				<div class="col-sm">\
+					<div id="container_sentiment_' + frequency + '" class="chartContainer"></div>\
+				</div>\
+			</div>';
 		}
 
 		// Socket.IO
@@ -119,6 +133,7 @@
 				chartsCount[frequency].setDataSeries(filtered);
 				chartsSentiment[frequency].setDataSeries(filtered);
 			}
+
 			for(let seriesName in seriesNames) {
 				if(!seriesNames[seriesName]) {
 					continue;
