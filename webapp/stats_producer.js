@@ -1,10 +1,10 @@
 const config = require("./config");
+const args = require("./minimist")(process.argv);
+const keywords = require("./glossary")(args.first, args.last);
 const mongodb = require("./mongodb");
 
-const keywords = require("./tmp_keywords");
-
 function generateStats(freq) {
-	let rescheduleTimeout = freq;
+	let rescheduleTimeout = 2 * freq;
 	let p = Promise.resolve();
 	if(mongodb.db) {
 		let db = mongodb.db;
@@ -36,47 +36,52 @@ function generateStats(freq) {
 			return results[0].timestamp_ms;
 		}))
 		//p = p.then(() => Promise.resolve(1528363997359))
-		.then((last_timestamp_ms) => {
-			let proms = [];
+		.then((lastTimestamp) => {
 			let now = config.fakeNow();
-			let ts = last_timestamp_ms + freq
-			while(ts < now) {
-				for(let kw in keywords) {
-				((ts, kw) => {
-					proms.push(db.collection(config.tweetsCollection)
-						.count({
-							"timestamp_ms": {
-								"$gte": ts,
-								"$lt": ts + freq,
-							},
-							"retweeted_status.extended_tweet.full_text": keywords[kw].regex,
-						})
-						/*.count({
-						    "timestamp_ms": {
-						        "$gte": 1528363997359 + 5000,
-						        "$lt": 1528363997359 + 5000 + 100000
-						    },
-							"retweeted_status.extended_tweet.full_text": /BTC/
-						})*/
-						.then((count) => {
-							return {
-								date: ts,
-								freq: freq,
-								keyword: kw,
-								count: count
-							};
-						}));
-				})(ts, kw);
-				}
-				ts += freq;
-			}
-			return Promise.all(proms);
+			return mongodb.db.collection(config.tweetsCollection)
+			.aggregate([
+				{
+					"$unwind": "$coins",
+				},
+				{
+					"$match": {
+						timestamp_ms: { "$gt": lastTimestamp }
+					}
+				},
+				{
+					"$project": {
+						timerange: { "$multiply": [ { "$trunc": { "$divide": [ "$timestamp_ms", freq ] } }, freq ] },
+						timestamp_ms: 1,
+						coins: 1,
+						sentiment_score: 1,
+					}
+				},
+				{
+					"$group": {
+						_id: {
+							timerange: "$timerange",
+							keyword: "$coins",
+						},
+						date: { "$first": "$timerange" },
+						keyword: { "$first": "$coins" },
+						count: { "$sum": 1 },
+						avg_sentiment_score: { "$avg": "$sentiment_score" }
+					}
+				},
+			])
+			.toArray();
 		})
 		.then((results) => {
-			console.error("results: " + JSON.stringify(results, null, 2));
-			return results.length ? db.collection(config.twitterStatsCollection)
-				.insertMany(results)
-			: Promise.resolve();
+			console.log("request done");
+			if(!results.length) {
+				return Promise.resolve();
+			}
+			return mongodb.db.collection(config.twitterStatsCollection)
+			.insertMany(results.map((obj) => {
+				obj._id.freq = freq;
+				obj.freq = freq;
+				return obj;
+			}));
 		})
 		.catch((err) => {
 			console.error("error: " + err);
@@ -89,4 +94,7 @@ function generateStats(freq) {
 	p.then(() => setTimeout(generateStats.bind(this, freq), rescheduleTimeout));
 }
 
-generateStats(60000);
+generateStats(60 * 1000);
+generateStats(10 * 60 * 1000);
+generateStats(60 * 60 * 1000);
+generateStats(6 * 60 * 60 * 1000);

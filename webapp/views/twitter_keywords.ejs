@@ -15,13 +15,13 @@
 	<form>
 		<span ng-repeat="keyword in availableKeywords">
 			<label for="{{keyword}}">
-				<input type="checkbox" ng-model="enabledKeywords[keyword]" name="group" id="{{ keyword }}" />
+				<input type="checkbox" ng-model="enabledKeywords[keyword]" name="group" id="{{keyword}}" />
 				{{ keyword }}
 			</label>
 		</span>
 	</form>
-	<h2>Plotted series</h2>
-	<div id="container">
+	<h2>Realtime plots</h2>
+	<div id="containers">
 	</div>
 </div>
 <script>
@@ -60,7 +60,7 @@
 
 		addDataPoints(seriesName, points) {
 			let dps = null;
-			console.log("addDataPoints to " + seriesName + ": " + JSON.stringify(points, null, 2));
+			//console.log("addDataPoints to " + seriesName + ": " + JSON.stringify(points, null, 2));
 			for(let series of this.chart.data) {
 				if(series.name == seriesName) {
 					dps = series.dataPoints;
@@ -77,8 +77,13 @@
 
 	var app = angular.module("app", []);
 	app.controller("ctrl", function($scope) {
-		// Chart
-		let chart = new LineChart("container", "Keyword occurences");
+		// Frequencies
+		let frequencies = <%- JSON.stringify(frequencies) %>;
+		let containers = document.querySelector("#containers");
+		for(let frequency in frequencies) {
+			containers.innerHTML += '<div id="container_count_' + frequency + '" style="width: 80%; height: 400px"></div><br />';
+			containers.innerHTML += '<div id="container_sentiment_' + frequency + '" style="width: 80%; height: 400px"></div><br />';
+		}
 
 		// Socket.IO
 		let socket = io("/twitter_data");
@@ -98,11 +103,22 @@
 			// Update keyword request
 			let seriesNames = {};
 			for(let keyword in newValue) {
-				seriesNames["twitter_keyword_" + keyword] = newValue[keyword];
+				for(let frequency in frequencies) {
+					seriesNames["twitter_keyword_" + keyword + "_" + frequency] = newValue[keyword];
+				}
 			}
 			socket.emit("request_series", seriesNames);
 			// Update chart
-			chart.setDataSeries(seriesNames);
+			for(let frequency in frequencies) {
+				let filtered = {};
+				for(let seriesName in seriesNames) {
+					if(seriesName.split("_").slice(-1)[0] == frequency) {
+						filtered[seriesName] = seriesNames[seriesName];
+					}
+				}
+				chartsCount[frequency].setDataSeries(filtered);
+				chartsSentiment[frequency].setDataSeries(filtered);
+			}
 			for(let seriesName in seriesNames) {
 				if(!seriesNames[seriesName]) {
 					continue;
@@ -110,15 +126,24 @@
 				socket.off(seriesName);
 				((seriesName) => {
 				socket.on(seriesName, (data) => {
-					//console.log("got data for series " + seriesName + ": " + JSON.stringify(data, null, 2));
-					chart.addDataPoints(seriesName, data.map((obj) => ({
-						x: new Date(obj.date),
-						y: obj.count,
-					})));
+					console.log("got data for series " + seriesName + ": " + JSON.stringify(data, null, 2));
+					let frequency = seriesName.split("_").slice(-1)[0];
+					let chartCount = chartsCount[frequency];
+					let chartSentiment = chartsSentiment[frequency];
+					chartCount.addDataPoints(seriesName, data.map((obj) => ({ x: new Date(obj.date), y: obj.count })));
+					chartSentiment.addDataPoints(seriesName, data.map((obj) => ({ x: new Date(obj.date), y: obj.avg_sentiment_score })));
 				});
 				})(seriesName);
 			}
 		}, true);
+
+		// Charts
+		let chartsCount = {};
+		let chartsSentiment = {};
+		for(let frequency in frequencies) {
+			chartsCount[frequency] = new LineChart("container_count_" + frequency, "Tweet counts (" + frequencies[frequency] + ")");
+			chartsSentiment[frequency] = new LineChart("container_sentiment_" + frequency, "Sentiment score (" + frequencies[frequency] + ")");
+		}
 	});
 </script>
 <%- include("footer") %>

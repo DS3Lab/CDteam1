@@ -40,7 +40,9 @@ app.get("/twitter", (req, res) => {
 	return res.render("twitter_plot");
 });
 app.get("/twitter_keywords", (req, res) => {
-	return res.render("twitter_keywords");
+	return res.render("twitter_keywords", {
+		frequencies: config.twitterFrequencies,
+	});
 });
 
 http.listen(3000, "0.0.0.0");

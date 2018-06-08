@@ -4,7 +4,6 @@ const mongodb = require("./mongodb.js");
 const config = require("./config");
 
 let seriesSets = [
-	require("./series_raw_tweet_count"),
 	require("./series_twitter_keywords"),
 ];
 
@@ -33,6 +32,9 @@ function saveData(seriesName, records) {
 	while(sa.array.length > series.persistence) {
 		sa.array.shift();
 	}
+	if(seriesName == "twitter_keyword_bitcoin" && sa.array.length && sa.array[0].freq == 10 * 60 * 1000) {
+		console.error("final sa: " + JSON.stringify(sa.array, null, 2));
+	}
 	//console.error("final sa: " + JSON.stringify(sa.array, null, 2));
 }
 
@@ -59,11 +61,7 @@ function initializeData() {
 	let proms = [];
 	for(let seriesName in timeSeries) {
 		let series = timeSeries[seriesName];
-		let ivs = [];
-		for(let i = series.persistence; i > 0; i--) {
-			ivs.push([ now - i * series.frequency, now - (i - 1) * series.frequency ]);
-		}
-		proms.push(series.queryInIntervals(ivs)
+		proms.push(series.queryInSlices(0, series.persistence)
 		.then((results) => {
 			saveData(seriesName, results);
 		}));
@@ -78,7 +76,7 @@ function initializeData() {
 function queryAndEmitData(io, seriesName) {
 	let series = timeSeries[seriesName];
 	let now = config.fakeNow();
-	return series.queryInIntervals([ [ now - series.frequency, now ] ])
+	return series.queryInSlices(0, 1)
 	.then((results) => {
 		saveData(seriesName, results)
 	})

@@ -1,39 +1,60 @@
 const mongodb = require("./mongodb");
 const config = require("./config");
+const availableKeywords = require("./glossary")();
+const frequencies = [ 60 * 1000,  ]
 
-const availableKeywords = require("./tmp_keywords");
-
-function queryTweetsByKeywordInIntervals(kw) {
-	function queryTweetsInIntervals(ivs) {
+function queryTweetsByKeywordInSlices(kw, freq) {
+	function queryTweetsInSlices(oldestSlice, newestSlice) {
 		if(!mongodb.db) {
 			return Promise.reject();
 		}
-		let min = Math.min(...ivs.map((x) => x[0]));
-		let max = Math.max(...ivs.map((x) => x[1]));
 		return mongodb.db.collection(config.twitterStatsCollection)
-			.find({
-				date: {
-					"$gte": min,
-					"$lt": max,
+		.aggregate({
+			"$project": {
+				date: 1,
+				freq: 1,
+				keyword: 1,
+				count: 1,
+				avg_sentiment_score: 1,
+				backwardsSlice: { "$trunc": { "$divide": [ { "$add": [ Date.now(), { "$multiply": [ -1, "$date" ] } ] }, "$freq" ] } },
+			}
+		},
+		{
+			"$match": {
+				backwardsSlice: {
+					"$gte": oldestSlice,
+					"$lte": newestSlice,
 				},
-				keyword: kw,
-			})
-			.toArray()
-			.then((results) => {
-				console.error("size of results tweets with " + kw + " in interval (" + min + "," + max + "): " + results.length);
-				return results;
-			});
+				keyword: kw,//{ "$in": availableKeywords[kw].versions },
+				freq: freq,
+			}
+		},
+		{
+			"$project": {
+				date: "$date",
+				freq: "$freq",
+				keyword: "$keyword",
+				count: "$count",
+				avg_sentiment_score: "$avg_sentiment_score"
+			}
+		})
+		.toArray()
+		.then((results) => {
+			return results;
+		});
 	}
-	return queryTweetsInIntervals;
+	return queryTweetsInSlices;
 }
 
 let series = {};
 for(let kw in availableKeywords) {
-	series["twitter_keyword_" + kw] = {
-		queryInIntervals: queryTweetsByKeywordInIntervals(kw),
-		persistence: 100,
-		frequency: 60000,
-	};
+	for(let frequency in config.twitterFrequencies) {	
+		series["twitter_keyword_" + kw + "_" + frequency] = {
+			queryInSlices: queryTweetsByKeywordInSlices(kw, parseInt(frequency)),
+			persistence: 100,
+			frequency: 60 * 1000,
+		};
+	}
 }
 
 function newClient(socket) {
