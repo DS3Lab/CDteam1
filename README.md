@@ -103,5 +103,18 @@ Connect to Jupyter notebook.
 * Open `https://localhost:9999/` in browser. The password is the one you defined with the `jupyter notebook password` command.
  
  
- 
+Run Twitter streamer.
+
+* Fill in the credentials for Twitter API
+  ```
+  cp config/test_config.ini config.ini
+  nano config/config.ini
+  ```
+
+* Run `tweepy_stream.py`
+   ```
+   screen -S tweepy
+   source activate ds3
+   python3 tweepy_stream.py
+   ```  
  
