@@ -20,10 +20,17 @@
 		</div>
 
 		<div class="row text-left">
-			<div id="container">
+			<div class="col-sm">
+			<div id="chartVolume" class="chartContainer"></div>
+			</div>
+		</div>
+		
+		<div class="row text-left">
+			<div class="col-sm">
+			<div id="chartSentiment" class="chartContainer"></div>
+			</div>
 		</div>
 
-		</div>
 	</div>
 </div>
 <script>
@@ -86,8 +93,11 @@
 
 	var app = angular.module("app", []);
 	app.controller("ctrl", function($scope) {
-		// Chart
-		let chart = new LineChart("container", "Cryptocurrency occurrences in Tweets", "number of Tweets");
+		// Chart for volumes of tweets
+		let chartVolume = new LineChart("chartVolume", "Cryptocurrency occurrences in Tweets", "number of Tweets");
+
+		// TODO: CHART FOR SENTIMENT
+		let chartSentiment = new LineChart("chartSentiment", "Sentiment toward cryptocurrency in Tweets", "sentiment of Tweets");
 
 		// Socket.IO
 		let socket = io("/twitter_data");
@@ -110,8 +120,12 @@
 				seriesNames["twitter_keyword_" + keyword] = newValue[keyword];
 			}
 			socket.emit("request_series", seriesNames);
-			// Update chart
-			chart.setDataSeries(seriesNames);
+			// Update volume chart
+			chartVolume.setDataSeries(seriesNames);
+
+			// TODO: SENTIMENT CHART
+			chartSentiment.setDataSeries(seriesNames);
+
 			for(let seriesName in seriesNames) {
 				if(!seriesNames[seriesName]) {
 					continue;
@@ -120,7 +134,13 @@
 				((seriesName) => {
 				socket.on(seriesName, (data) => {
 					//console.log("got data for series " + seriesName + ": " + JSON.stringify(data, null, 2));
-					chart.addDataPoints(seriesName, data.map((obj) => ({
+					chartVolume.addDataPoints(seriesName, data.map((obj) => ({
+						x: new Date(obj.date),
+						y: obj.count,
+					})));
+
+					// TODO: SENTIMENT CHART
+					chartSentiment.addDataPoints(seriesName, data.map((obj) => ({
 						x: new Date(obj.date),
 						y: obj.count,
 					})));
