@@ -16,7 +16,9 @@ node app.js
 ```
 ## Endpoints
 
-### Realtime Twitter stats
+### Realtime Twitter coarse stats (for the moment: tweet counts)
 http://35.234.78.152:3000/twitter
+### Realtime Twitter keyword stats
+http://35.234.78.152:3000/twitter_keywords
 ### Historical charts
 http://35.234.78.152:3000/historical/1
