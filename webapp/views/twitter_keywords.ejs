@@ -31,8 +31,9 @@
 			this.yLabel = yLabel;
 		}
 
-		setDataSeries(seriesNames) {
+		setDataSeries(seriesNames, nameToLegend) {
 			let data = new Array();
+			nameToLegend = nameToLegend || ((name) => name);
 			for(let seriesName in seriesNames) {
 				if(!seriesNames[seriesName]) {
 					continue;
@@ -41,6 +42,7 @@
 				data.push({
 					name: seriesName,
 		            type: "line",
+		            legendText: nameToLegend(seriesName),
 		            showInLegend: true,
 		            dataPoints: new Array(),
 		            xValueFormatString: "YYYY-MM-DD HH:mm:ss",
@@ -130,8 +132,9 @@
 						filtered[seriesName] = seriesNames[seriesName];
 					}
 				}
-				chartsCount[frequency].setDataSeries(filtered);
-				chartsSentiment[frequency].setDataSeries(filtered);
+				let nameToLegend = ((name) => name.split("_")[2]);
+				chartsCount[frequency].setDataSeries(filtered, nameToLegend);
+				chartsSentiment[frequency].setDataSeries(filtered, nameToLegend);
 			}
 
 			for(let seriesName in seriesNames) {
