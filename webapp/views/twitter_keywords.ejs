@@ -1,27 +1,56 @@
 <%- include("header") %>
 <script src="/socket.io/socket.io.js"></script>
 <div ng-app="app" ng-controller="ctrl">
-	<h2>Some text</h2>
-	<p>{{ someText }}</p>
-	<h2>Available keywords</h2>
-	<ul>
-		<li ng-repeat="keyword in availableKeywords">{{ keyword }}</li>
-	</ul>
-	<h2>Checked keywords</h2>
-	<ul>
-		<li ng-repeat="keyword in availableKeywords" ng-show="enabledKeywords[keyword]">{{ keyword }}</li>
-	</ul>
-	<h2>Keywords checking</h2>
-	<form>
-		<span ng-repeat="keyword in availableKeywords">
-			<label for="{{keyword}}">
-				<input type="checkbox" ng-model="enabledKeywords[keyword]" name="group" id="{{ keyword }}" />
-				{{ keyword }}
-			</label>
-		</span>
-	</form>
-	<h2>Plotted series</h2>
-	<div id="container">
+	<div class="container">
+  		
+  		<div class="row text-left">
+  			<div class="col-sm">
+				<h3>Twitter streaming</h3>
+				<p>This is a Twitter streaming dashboard for monitoring sentiment and keywords on newly published Tweets.</p>
+			</div>
+		</div>
+
+		<div class="row text-left">
+			<div class="col-sm">
+			<h3>Available keywords</h3>
+			<ul>
+				<li ng-repeat="keyword in availableKeywords">{{ keyword }}</li>
+			</ul>
+			</div>
+		</div>
+
+		<div class="row text-left">
+			<div class="col-sm">
+			<h3>Checked keywords</h3>
+			<ul>
+				<li ng-repeat="keyword in availableKeywords" ng-show="enabledKeywords[keyword]">{{ keyword }}</li>
+			</ul>
+			</div>
+		</div>
+
+		<div class="row text-left">
+			<div class="col-sm">
+			<h3>Keywords checking</h3>
+			<form>
+				<span ng-repeat="keyword in availableKeywords">
+					<label for="{{keyword}}">
+						<input type="checkbox" ng-model="enabledKeywords[keyword]" name="group" id="{{ keyword }}" />
+						{{ keyword }}
+					</label>
+				</span>
+			</form>
+			</div>
+		</div>
+
+		<div class="row text-left">
+			<div class="col-sm">
+			<h3>Plotted series</h3>
+			<div id="container">
+			</div>
+			</div>
+		</div>
+
+		</div>
 	</div>
 </div>
 <script>
