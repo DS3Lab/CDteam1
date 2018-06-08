@@ -1,53 +1,26 @@
 <%- include("header") %>
 <script src="/socket.io/socket.io.js"></script>
 <div ng-app="app" ng-controller="ctrl">
-	<div class="container">
+	<div class="container mt-5">
   		
   		<div class="row text-left">
   			<div class="col-sm">
-				<h3>Twitter streaming</h3>
-				<p>This is a Twitter streaming dashboard for monitoring sentiment and keywords on newly published Tweets.</p>
+				<h3>Monitoring cryptocurrencies Twittersphere</h3>
+				<p>This is a Twitter streaming dashboard for monitoring sentiment and keywords on newly published Tweets. For more information check our <a href="https://github.com/DS3Lab/CDteam1" >Github page</a> and an official page of <a href="https://www.cryptodatathon.com/">Cryptodatathon 2018</a>.</p>
+				<p>To start, select the crpytocurrencies for which you want to retrieve the data:</p>
+				<form>
+					<span ng-repeat="keyword in availableKeywords">
+						<label for="{{keyword}}">
+							<input type="checkbox" ng-model="enabledKeywords[keyword]" name="group" id="{{ keyword }}" />
+							{{ keyword }}
+						</label>
+					</span>
+				</form>
 			</div>
 		</div>
 
 		<div class="row text-left">
-			<div class="col-sm">
-			<h3>Available keywords</h3>
-			<ul>
-				<li ng-repeat="keyword in availableKeywords">{{ keyword }}</li>
-			</ul>
-			</div>
-		</div>
-
-		<div class="row text-left">
-			<div class="col-sm">
-			<h3>Checked keywords</h3>
-			<ul>
-				<li ng-repeat="keyword in availableKeywords" ng-show="enabledKeywords[keyword]">{{ keyword }}</li>
-			</ul>
-			</div>
-		</div>
-
-		<div class="row text-left">
-			<div class="col-sm">
-			<h3>Keywords checking</h3>
-			<form>
-				<span ng-repeat="keyword in availableKeywords">
-					<label for="{{keyword}}">
-						<input type="checkbox" ng-model="enabledKeywords[keyword]" name="group" id="{{ keyword }}" />
-						{{ keyword }}
-					</label>
-				</span>
-			</form>
-			</div>
-		</div>
-
-		<div class="row text-left">
-			<div class="col-sm">
-			<h3>Plotted series</h3>
 			<div id="container">
-			</div>
-			</div>
 		</div>
 
 		</div>
@@ -55,9 +28,10 @@
 </div>
 <script>
 	class LineChart {
-		constructor(id, title) {
+		constructor(id, title, yLabel) {
 			this.id = id;
 			this.title = title;
+			this.yLabel = yLabel;
 		}
 
 		setDataSeries(seriesNames) {
@@ -78,9 +52,15 @@
 			this.chart = new CanvasJS.Chart(this.id, {
 		        title: {
 		            text: this.title,
+		            fontWeight: "lighter",
+		            fontSize: 20,
+		            fontStyle: "normal",
+		            fontFamily: "Tahoma"
 		        },
 		        axisY: {
-		            includeZero: false
+		        	title: this.yLabel,
+		            includeZero: false,
+		            gridDashType: "dot"
 		        },      
 		        data: data,
 		    });
@@ -107,7 +87,7 @@
 	var app = angular.module("app", []);
 	app.controller("ctrl", function($scope) {
 		// Chart
-		let chart = new LineChart("container", "Keyword occurences");
+		let chart = new LineChart("container", "Cryptocurrency occurrences in Tweets", "number of Tweets");
 
 		// Socket.IO
 		let socket = io("/twitter_data");
