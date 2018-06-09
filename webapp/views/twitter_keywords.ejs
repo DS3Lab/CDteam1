@@ -25,10 +25,11 @@
 </div>
 <script>
 	class LineChart {
-		constructor(id, title, yLabel) {
+		constructor(id, title, yLabel, dataLen) {
 			this.id = id;
 			this.title = title;
 			this.yLabel = yLabel;
+			this.dataLen = dataLen || 100;
 		}
 
 		setDataSeries(seriesNames, nameToLegend) {
@@ -79,6 +80,7 @@
 				return;
 			}
 			dps.push.apply(dps, points);
+			dps.splice(0, dps.length - this.dataLen);
 			this.chart.render();
 		}
 	}
@@ -159,8 +161,8 @@
 		let chartsCount = {};
 		let chartsSentiment = {};
 		for(let frequency in frequencies) {
-			chartsCount[frequency] = new LineChart("container_count_" + frequency, "Tweet counts (" + frequencies[frequency] + ")");
-			chartsSentiment[frequency] = new LineChart("container_sentiment_" + frequency, "Sentiment score (" + frequencies[frequency] + ")");
+			chartsCount[frequency] = new LineChart("container_count_" + frequency, "Tweet volume (" + frequencies[frequency] + ")", "Volume", 100);
+			chartsSentiment[frequency] = new LineChart("container_sentiment_" + frequency, "Sentiment score (" + frequencies[frequency] + ")", "Sentiment score", 100);
 		}
 	});
 </script>

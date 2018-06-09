@@ -52,7 +52,7 @@ for(let kw in availableKeywords) {
 		series["twitter_keyword_" + kw + "_" + frequency] = {
 			queryInSlices: queryTweetsByKeywordInSlices(kw, parseInt(frequency)),
 			persistence: 100,
-			frequency: 60 * 1000,
+			frequency: parseInt(frequency),
 		};
 	}
 }
