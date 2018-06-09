@@ -46,8 +46,7 @@ function generateStats(freq) {
 				{
 					"$match": {
 						timestamp_ms: {
-							"$gt": lastTimestamp,
-							"$lt": now - freq,
+							"$gt": now - parseInt((now - lastTimestamp) / freq) * freq,
 						}
 					}
 				},
@@ -55,12 +54,12 @@ function generateStats(freq) {
 					"$project": {
 						timerange: {
 							"$add": [
-								lastTimestamp,
+								now,
 								{
 									"$multiply": [
 										{
 											"$trunc": { "$divide": [
-												{ "$add": [ "$timestamp_ms", -lastTimestamp ] },
+												{ "$add": [ "$timestamp_ms", -now ] },
 												freq
 											] }
 										},
