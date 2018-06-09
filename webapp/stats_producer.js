@@ -13,7 +13,7 @@ function generateStats(freq) {
 			"freq": freq
 		})
 		.sort({
-			"timestamp_ms": -1,
+			"date": -1,
 		})
 		.limit(1)
 		.toArray()
@@ -33,7 +33,7 @@ function generateStats(freq) {
 					return results[0].timestamp_ms;
 				});
 			}
-			return results[0].timestamp_ms;
+			return results[0].date;
 		}))
 		//p = p.then(() => Promise.resolve(1528363997359))
 		.then((lastTimestamp) => {
@@ -45,12 +45,30 @@ function generateStats(freq) {
 				},
 				{
 					"$match": {
-						timestamp_ms: { "$gt": lastTimestamp }
+						timestamp_ms: {
+							"$gt": lastTimestamp,
+							"$lt": now - freq,
+						}
 					}
 				},
 				{
 					"$project": {
-						timerange: { "$multiply": [ { "$trunc": { "$divide": [ "$timestamp_ms", freq ] } }, freq ] },
+						timerange: {
+							"$add": [
+								lastTimestamp,
+								{
+									"$multiply": [
+										{
+											"$trunc": { "$divide": [
+												{ "$add": [ "$timestamp_ms", -lastTimestamp ] },
+												freq
+											] }
+										},
+										freq
+									]
+								}
+							]
+						},
 						timestamp_ms: 1,
 						coins: 1,
 						sentiment_score: 1,
@@ -59,10 +77,10 @@ function generateStats(freq) {
 				{
 					"$group": {
 						_id: {
-							timerange: "$timerange",
+							date: "$timerange", 
 							keyword: "$coins",
 						},
-						date: { "$first": "$timerange" },
+						date: { "$first": "$timerange" }, 
 						keyword: { "$first": "$coins" },
 						count: { "$sum": 1 },
 						avg_sentiment_score: { "$avg": "$sentiment_score" }
