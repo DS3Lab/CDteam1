@@ -111,7 +111,6 @@ function generateStats(freq) {
 	p.then(() => setTimeout(generateStats.bind(this, freq), rescheduleTimeout));
 }
 
-generateStats(60 * 1000);
-generateStats(10 * 60 * 1000);
-generateStats(60 * 60 * 1000);
-generateStats(6 * 60 * 60 * 1000);
+for(let frequency in config.twitterFrequencies) {
+	generateStats(parseInt(frequency));
+}

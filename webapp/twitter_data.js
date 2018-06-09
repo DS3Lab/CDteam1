@@ -96,6 +96,9 @@ module.exports = ((io) => {
 		}
 		socket.on("request_series", (seriesNames) => {
 			for(let seriesName in seriesNames) {
+				if(Object.keys(timeSeries).indexOf(seriesName) == -1) {
+					continue;
+				}
 				if(seriesNames[seriesName]) {
 					emitAllUnicast(socket, seriesName);
 					socket.join(seriesName);
