@@ -24,6 +24,38 @@ We have one instance of Google Cloud Platform machine that hosts a web server. I
 	ssh -i cdteam1 cdteam1@[ip address of the machine]
 	```
 
+### Migrating Twitter streaming analysis from AWS EC2 to GCP:
+
+* On AWS EC2 machine, create a specification list for the Anaconda environment:
+  ```
+  source activate ds3
+  conda list --explicit > ds3-requirements.txt
+  ```
+
+* You can now create and identical Anaconda environment on another (linux-64) machine, for example on GCP:
+  ```
+  conda create --name ds3 --file ds3-requirements.txt
+  ```
+
+* If an environment already exists you can instead just install all the needed packages:
+  ```
+  conda install --name ds3 --file ds3-requirements.txt 
+  ```
+
+* However, for some reason some libraries are still missing so you have to install them manually:
+  ```
+  conda install -c anaconda pymongo
+  conda install -c conda-forge tweepy 
+  python -m spacy download en
+  ```
+
+* Also, download needed lexicons for `nltk`:
+  ```
+  > python3
+  >>> import nltk
+  >>> nltk.download('vader_lexicon')
+  ```
+
 ## Amazon Web Services
 
 We have one instance of AWS EC2 machine of type m5.4xlarge with 64 GB of RAM memory and 2TB of HDD mounted to `/data`. Spark and MongoDB are already installed on the instance. The instance will be deleted after the datathon, so should not be used for permanent data storage, only processing!
@@ -97,11 +129,11 @@ Second, setup Jupyter Server.
 Connect to Jupyter notebook.
 
 * Create SSH tunnel
-   ```
-   ssh -i /path_to/CDteam2.pem -N -f -L localhost:9999:localhost:9999 ubuntu@[hostname identifier of your machine].compute-1.amazonaws.com
-   ```
+  ```
+  ssh -i /path_to/CDteam2.pem -N -f -L localhost:9999:localhost:9999 ubuntu@[hostname identifier of your machine].compute-1.amazonaws.com
+  ```
+
 * Open `https://localhost:9999/` in browser. The password is the one you defined with the `jupyter notebook password` command.
- 
  
 Run Twitter streamer.
 
@@ -112,9 +144,9 @@ Run Twitter streamer.
   ```
 
 * Run `tweepy_stream.py`
-   ```
-   screen -S tweepy
-   source activate ds3
-   python3 tweepy_stream.py
-   ```  
+  ```
+  screen -S tweepy
+  source activate ds3
+  python3 tweepy_stream.py
+  ```  
  

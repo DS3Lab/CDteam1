@@ -41,9 +41,11 @@ def mentioned(tweet):
 def detect_keyws(tweet):
     # also deals with plurals
     detected = []
-    for word in (w for w in tweet.split(" ") if len(w)!=0):
+    for word in tweet.split(" "):
         process_stem = False
         word = word.strip(",.?!").strip()
+        if len(word)==0:
+            continue
         if word[-1] == "s":
             word_stem = word[:-1]
             process_stem = True
